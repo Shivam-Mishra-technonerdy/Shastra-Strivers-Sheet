@@ -1,21 +1,22 @@
+
 #include <bits/stdc++.h>
 using namespace std;
 
 class Solution {
 public:
     int wordLadderLength(string startWord, string targetWord,
-        vector<string>& wordList) {
-        unordered_set<string> dictionary(
-            wordList.begin(), wordList.end()
-        );
+                         vector<string>& wordList) {
+        unordered_set<string> words(wordList.begin(), wordList.end());
 
-        if (dictionary.find(targetWord) == dictionary.end()) {
+        if (!words.count(targetWord)) {
             return 0;
         }
 
         queue<pair<string, int>> q;
         q.push({startWord, 1});
-        dictionary.erase(startWord);
+
+        unordered_set<string> visited;
+        visited.insert(startWord);
 
         while (!q.empty()) {
             string word = q.front().first;
@@ -30,12 +31,12 @@ public:
                 char original = word[i];
 
                 for (char ch = 'a'; ch <= 'z'; ch++) {
+                    if (ch == original) continue;
+
                     word[i] = ch;
 
-                    auto it = dictionary.find(word);
-
-                    if (it != dictionary.end()) {
-                        dictionary.erase(it);
+                    if (words.count(word) && !visited.count(word)) {
+                        visited.insert(word);
                         q.push({word, steps + 1});
                     }
                 }
@@ -49,17 +50,19 @@ public:
 };
 
 int main() {
-    string startWord, targetWord;
-    cin >> startWord >> targetWord;
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
 
-    int n;
-    cin >> n;
+    int N;
+    cin >> N;
 
-    vector<string> wordList(n);
-
-    for (int i = 0; i < n; i++) {
+    vector<string> wordList(N);
+    for (int i = 0; i < N; i++) {
         cin >> wordList[i];
     }
+
+    string startWord, targetWord;
+    cin >> startWord >> targetWord;
 
     Solution sol;
     cout << sol.wordLadderLength(startWord, targetWord, wordList)

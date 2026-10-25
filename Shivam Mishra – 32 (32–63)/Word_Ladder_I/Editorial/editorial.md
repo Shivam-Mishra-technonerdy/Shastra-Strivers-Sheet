@@ -1,261 +1,146 @@
+
 # Editorial: Word Ladder I
 
 ## Topic
-Breadth-First Search (BFS), Hash Set, Shortest Path
+BFS (Breadth-First Search) / Graph
 
 ## Problem Statement
-Given two strings, `startWord` and `targetWord`, and a dictionary `wordList`, find the length of the shortest transformation sequence from `startWord` to `targetWord`.
+Given two distinct words `startWord` and `targetWord`, along with a dictionary `wordList` containing unique words of equal length, find the length of the shortest transformation sequence from `startWord` to `targetWord`.
 
-A transformation consists of changing exactly one character at a time, and every intermediate word must belong to the dictionary. The starting word does not need to be present in the dictionary.
+The following conditions must be satisfied:
+- Only one character can be changed at a time.
+- Every transformed word must exist in `wordList`, including `targetWord`.
+- `startWord` may or may not be present in `wordList`.
+- The sequence length includes both `startWord` and `targetWord`.
+- If no valid transformation sequence exists, return `0`.
 
-Return the number of words in the shortest valid sequence, including both the starting and target words. If no valid transformation sequence exists, return `0`.
+## Approach
+We can solve this problem efficiently using Breadth-First Search (BFS).
 
-### Example
+Each word can be considered a node in a graph, and an edge exists between two words if they differ by exactly one character. The objective is to find the shortest path from `startWord` to `targetWord`.
+
+Since every transformation has the same cost, BFS explores the graph level by level and guarantees that the first time we reach the target word, we have found the shortest transformation sequence.
+
+### Algorithm
+1. Insert all words from `wordList` into an unordered set for efficient lookup.
+2. If `targetWord` is not present in the set, return `0`, because the target must belong to the dictionary.
+3. Initialize a queue containing the pair `(startWord, 1)`. The second value represents the number of words in the current transformation sequence, including the starting word.
+4. Create a visited set and mark `startWord` as visited to prevent repeated processing.
+5. While the queue is not empty:
+   - Remove the front element, obtaining the current word and its sequence length.
+   - If the current word equals `targetWord`, return its sequence length.
+   - Iterate through every character position in the current word.
+   - Replace that character with each lowercase English letter from `'a'` to `'z'`, skipping the original character.
+   - If the newly generated word exists in the dictionary and has not been visited:
+     - Mark it as visited.
+     - Add it to the queue with the sequence length increased by one.
+   - Restore the original character before processing the next position.
+6. If the queue becomes empty without reaching `targetWord`, return `0`.
+
+### Example Walkthrough
 
 **Input:**
 ```text
-der dfs
-5
-des der dfr dgt dfs
+wordList = ["des", "der", "dfr", "dgt", "dfs"]
+startWord = "der"
+targetWord = "dfs"
 ```
 
-**Output:**
+**Step 1:** Initialize the queue.
+
 ```text
-3
+Queue: [(der, 1)]
 ```
 
-**Explanation:**
+**Step 2:** Process `der`.
 
-One shortest transformation sequence is:
+Changing one character at a time generates valid dictionary words such as `des` and `dfr`.
 
-`der → dfr → dfs`
-
-- `der` to `dfr`: Change the first character from `d` to `d`? No change is needed there; instead, the second character changes from `e` to `f`, and the first remains `d`. The third character changes from `r` to `r`. Thus, this is not a valid one-character transformation.
-
-A valid sequence for the given dictionary is:
-
-`der → des → dfs`
-
-However, `des` to `dfs` changes two characters, so this is also invalid. Therefore, the example input above is not suitable for demonstrating a valid sequence.
-
-Use the following corrected example instead.
-
-**Corrected Input:**
 ```text
-hit cog
-6
-hot dot dog lot log cog
+Queue: [(des, 2), (dfr, 2)]
 ```
 
-**Output:**
+**Step 3:** Process the next words.
+
+- `des` cannot reach `dfs` in one transformation.
+- `dfr` can reach `dfs` by changing the last character from `'r'` to `'s'`.
+
 ```text
-5
+Queue: [(dfr, 2), ...]
 ```
 
-**Explanation:**
+When `dfs` is discovered, it is added to the queue with a sequence length of `3`. When it is removed from the queue, the algorithm returns `3`.
 
-One shortest transformation sequence is:
+**Shortest transformation sequence:**
 
-`hit → hot → dot → dog → cog`
+```text
+der -> dfr -> dfs
+```
 
-This sequence contains five words, so the answer is `5`.
+Therefore, the answer is `3`.
 
-## Approach: Breadth-First Search (BFS)
-
-### 1. Why BFS?
-
-The problem asks for the shortest sequence of transformations. Each valid transformation changes exactly one character, meaning every transition has the same cost.
-
-Breadth-First Search explores states level by level:
-
-- Level 1 contains the starting word.
-- Level 2 contains words reachable using one transformation.
-- Level 3 contains words reachable using two transformations.
-- Subsequent levels represent increasingly longer transformation sequences.
-
-Consequently, the first time BFS reaches `targetWord`, it has found a shortest transformation sequence.
-
-### 2. Use a Hash Set for the Dictionary
-
-Store all dictionary words in an `unordered_set<string>`.
-
-A hash set is useful because it supports efficient average-case lookup, insertion, and deletion.
-
-Instead of checking every dictionary word to find valid transformations, we generate possible neighboring words and check whether each exists in the set.
-
-### 3. Initialize the BFS Queue
-
-Maintain a queue of pairs:
-
-`(word, steps)`
-
-Here:
-- `word` is the current word.
-- `steps` is the number of words in the transformation sequence from `startWord` to the current word.
-
-Initially, insert `(startWord, 1)` because the sequence already contains the starting word.
-
-If `targetWord` is absent from the dictionary, return `0` immediately because the target cannot be reached under the problem's rules.
-
-Remove `startWord` from the dictionary if it exists, preventing it from being visited again.
-
-### 4. Generate Neighboring Words
-
-While the queue is not empty:
-
-1. Remove the front element and obtain the current word and its sequence length.
-2. If the current word equals `targetWord`, return the current sequence length.
-3. For every character position in the current word:
-   - Save the original character.
-   - Replace it with every lowercase English letter from `'a'` to `'z'`.
-   - Check whether the resulting word exists in the dictionary.
-   - If it exists, remove it from the dictionary and add `(newWord, steps + 1)` to the queue.
-   - Restore the original character before moving to the next position.
-
-Removing a discovered word immediately ensures that it is not visited repeatedly. Since BFS discovers words in increasing order of distance, its first discovery also gives that word a shortest path from the starting word.
-
-### 5. Handle Unreachable Targets
-
-If the queue becomes empty without reaching `targetWord`, no valid transformation sequence exists. Return `0`.
-
-## C++ Solution
-
-```cpp
-#include <bits/stdc++.h>
-using namespace std;
-
+## Solution
+```Cpp
 class Solution {
 public:
     int wordLadderLength(string startWord, string targetWord,
                          vector<string>& wordList) {
-        unordered_set<string> dictionary(
-            wordList.begin(), wordList.end()
-        );
+        unordered_set<string> words(wordList.begin(), wordList.end());
 
-        // The target must be present in the dictionary.
-        if (dictionary.find(targetWord) == dictionary.end()) {
+        if (!words.count(targetWord)) {
             return 0;
         }
 
-        // Store each word along with its sequence length.
         queue<pair<string, int>> q;
         q.push({startWord, 1});
 
-        // Mark the starting word as visited.
-        dictionary.erase(startWord);
+        unordered_set<string> visited;
+        visited.insert(startWord);
 
         while (!q.empty()) {
             string word = q.front().first;
             int steps = q.front().second;
             q.pop();
 
-            // The first time we reach the target is optimal.
             if (word == targetWord) {
                 return steps;
             }
 
-            // Try changing each character independently.
             for (int i = 0; i < (int)word.size(); i++) {
                 char original = word[i];
 
                 for (char ch = 'a'; ch <= 'z'; ch++) {
+                    if (ch == original) continue;
+
                     word[i] = ch;
 
-                    auto it = dictionary.find(word);
-
-                    if (it != dictionary.end()) {
-                        // Mark visited when adding to the queue.
-                        dictionary.erase(it);
+                    if (words.count(word) && !visited.count(word)) {
+                        visited.insert(word);
                         q.push({word, steps + 1});
                     }
                 }
 
-                // Restore the original character.
                 word[i] = original;
             }
         }
 
-        // The target cannot be reached.
         return 0;
     }
 };
 ```
 
-## Correctness Proof
-
-We prove that the algorithm returns the length of the shortest valid transformation sequence, or `0` if no such sequence exists.
-
-**1. Every generated transition is valid.**
-
-The algorithm changes exactly one character of the current word and accepts the resulting word only if it belongs to the dictionary. Therefore, every transition follows the transformation rules.
-
-**2. Every reachable dictionary neighbor is considered.**
-
-For each character position, the algorithm tries every lowercase English letter. Hence, every dictionary word differing from the current word by exactly one character can be generated and discovered.
-
-**3. Each word is processed at most once.**
-
-Whenever a dictionary word is discovered, it is immediately removed from the hash set. Consequently, it cannot be added to the queue again. This prevents redundant processing.
-
-**4. BFS discovers words in shortest-distance order.**
-
-The queue processes all words at one transformation distance before processing words at a greater distance. Thus, when a word is first discovered, the path used to reach it has the minimum possible number of transformations.
-
-**5. The returned answer is optimal.**
-
-The starting word is assigned a sequence length of `1`. Each valid transition increases the length by one. Therefore, when BFS first reaches `targetWord`, the returned value is the minimum number of words in any valid sequence, including both endpoints.
-
-If the queue empties without reaching the target, no valid sequence exists, and returning `0` is correct.
-
-Hence, the algorithm is correct.
-
-## Complexity Analysis
+## Complexity
 
 Let:
+- `N` be the number of words in `wordList`.
+- `M` be the length of each word.
+- `26` be the number of lowercase English letters.
 
-- `N` be the number of words in the dictionary.
-- `L` be the length of each word.
-- `K` be the size of the character set; here, `K = 26`.
+**Expected Time Complexity:** `O(N * M * 26)`, or equivalently `O(N * M)`, assuming average constant-time hash-set operations. Each word is processed at most once, and for each word, every character position is tested with 26 possible letters.
 
-### Time Complexity
+**Auxiliary Space:** `O(N * M)` for storing the dictionary words, visited words, and BFS queue. The queue and visited set contain at most `N + 1` distinct words, including a possible `startWord` outside the dictionary.
 
-For each word processed by BFS, the algorithm considers `L` character positions and tries `K` possible characters at each position. Each generated word requires up to \(O(L)\) time to construct or hash.
+## Implementation
+See `Solution/solution.cpp` for the complete C++ implementation, including the `Solution` class and `main()` function.
 
-Therefore, the expected time complexity is:
-
-\[
-\boxed{O(NKL)}
-\]
-
-This simplifies to \(O(26NL)\), or \(O(NL)\) when treating the alphabet size as a constant.
-
-Building the initial hash set takes expected \(O(NL)\) time.
-
-### Auxiliary Space Complexity
-
-The hash set stores up to \(N\) words, and the queue can contain up to \(N\) words. Each stored word has length \(L\).
-
-Therefore, the auxiliary space complexity is:
-
-\[
-\boxed{O(NL)}
-\]
-
-The solution uses an iterative BFS and does not require recursive stack space.
-
-## Important Edge Cases
-
-1. **Target absent from the dictionary:** Return `0`.
-2. **Starting word equals target word:** If the target is present in the dictionary, return `1`.
-3. **No valid transformation exists:** Return `0` after BFS exhausts the queue.
-4. **Direct transformation:** If the target differs from the starting word by one character and is in the dictionary, return `2`.
-5. **Starting word appears in the dictionary:** It is removed from the set during initialization to prevent revisiting it.
-6. **Duplicate dictionary entries:** The hash set automatically removes duplicates.
-7. **Multiple shortest sequences:** BFS may discover any one of them first, but all have the same minimum length.
-
-## Implementation Notes
-
-- The implementation assumes all words consist of lowercase English letters and have equal lengths.
-- The starting word is counted as the first word, so the initial BFS distance is `1`, not `0`.
-- The target must be present in the dictionary for the transformation to succeed.
-- The implementation is contained in `Solution/solution.cpp`; its input format is documented in `Problem.md`.
+The implementation uses an unordered set for dictionary lookups and a queue for BFS traversal. The input format is documented in `Problem.md`.

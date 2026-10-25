@@ -1,5 +1,5 @@
+
 import java.io.*;
-import java.nio.file.*;
 import java.util.*;
 
 public class gen {
@@ -9,36 +9,31 @@ public class gen {
         String targetWord;
         List<String> wordList;
 
-        TestCase(String startWord, String targetWord,
-                 List<String> wordList) {
-            this.startWord = startWord;
-            this.targetWord = targetWord;
-            this.wordList = wordList;
+        TestCase(String start, String target, List<String> words) {
+            startWord = start;
+            targetWord = target;
+            wordList = words;
         }
     }
 
-    static int wordLadderLength(String startWord,
-                                String targetWord,
-                                List<String> wordList) {
+    static int solve(TestCase tc) {
+        Set<String> words = new HashSet<>(tc.wordList);
 
-        Set<String> dictionary = new HashSet<>(wordList);
-
-        if (!dictionary.contains(targetWord)) {
+        if (!words.contains(tc.targetWord)) {
             return 0;
         }
 
         Queue<String> queue = new LinkedList<>();
         Map<String, Integer> distance = new HashMap<>();
 
-        queue.offer(startWord);
-        distance.put(startWord, 1);
-        dictionary.remove(startWord);
+        queue.offer(tc.startWord);
+        distance.put(tc.startWord, 1);
 
         while (!queue.isEmpty()) {
             String word = queue.poll();
             int steps = distance.get(word);
 
-            if (word.equals(targetWord)) {
+            if (word.equals(tc.targetWord)) {
                 return steps;
             }
 
@@ -55,7 +50,8 @@ public class gen {
                     chars[i] = ch;
                     String next = new String(chars);
 
-                    if (dictionary.remove(next)) {
+                    if (words.contains(next)
+                            && !distance.containsKey(next)) {
                         distance.put(next, steps + 1);
                         queue.offer(next);
                     }
@@ -68,196 +64,113 @@ public class gen {
         return 0;
     }
 
-    static String changeOneCharacter(String word,
-                                     int position,
-                                     char replacement) {
-        char[] chars = word.toCharArray();
-        chars[position] = replacement;
-        return new String(chars);
+    static List<String> buildWords(String start, String target,
+                                   int extraCount, Random random) {
+        LinkedHashSet<String> words = new LinkedHashSet<>();
+
+        // Create a guaranteed transformation chain.
+        char[] current = start.toCharArray();
+
+        for (int i = 0; i < current.length; i++) {
+            if (current[i] != target.charAt(i)) {
+                current[i] = target.charAt(i);
+                words.add(new String(current));
+            }
+        }
+
+        // Add random words of the same length.
+        while (words.size() < extraCount) {
+            char[] chars = new char[start.length()];
+
+            for (int i = 0; i < chars.length; i++) {
+                chars[i] = (char) ('a' + random.nextInt(26));
+            }
+
+            String word = new String(chars);
+
+            if (!word.equals(start)) {
+                words.add(word);
+            }
+        }
+
+        return new ArrayList<>(words);
     }
 
-    static TestCase generateTestCase(int testNumber,
-                                     Random random) {
-
-        int length = 3 + random.nextInt(3);
-        StringBuilder builder = new StringBuilder();
+    static TestCase createCase(int index, Random random) {
+        int length = 2 + index % 5;
+        char[] startChars = new char[length];
+        char[] targetChars = new char[length];
 
         for (int i = 0; i < length; i++) {
-            builder.append((char) ('a' + random.nextInt(6)));
+            startChars[i] = (char) ('a' + random.nextInt(26));
+            targetChars[i] = startChars[i];
         }
 
-        String startWord = builder.toString();
+        // Ensure start and target are distinct.
+        int changes = 1 + index % length;
 
-        // Generate a valid transformation chain.
-        List<String> chain = new ArrayList<>();
-        Set<String> used = new HashSet<>();
-
-        chain.add(startWord);
-        used.add(startWord);
-
-        String current = startWord;
-
-        int chainLength = 1 + random.nextInt(5);
-
-        for (int step = 0; step < chainLength; step++) {
-            char[] chars = current.toCharArray();
-            boolean generated = false;
-
-            for (int attempt = 0; attempt < 100; attempt++) {
-                int position = random.nextInt(length);
-                char replacement =
-                    (char) ('a' + random.nextInt(6));
-
-                if (replacement == chars[position]) {
-                    continue;
-                }
-
-                char old = chars[position];
-                chars[position] = replacement;
-                String candidate = new String(chars);
-
-                if (!used.contains(candidate)) {
-                    current = candidate;
-                    chain.add(current);
-                    used.add(current);
-                    generated = true;
-                    break;
-                }
-
-                chars[position] = old;
-            }
-
-            if (!generated) {
-                break;
-            }
+        for (int i = 0; i < changes; i++) {
+            targetChars[i] = (char) ('a' +
+                    (targetChars[i] - 'a' + 1 + random.nextInt(25)) % 26);
         }
 
-        String targetWord = chain.get(chain.size() - 1);
-        List<String> wordList = new ArrayList<>();
+        String start = new String(startChars);
+        String target = new String(targetChars);
 
-        // Include chain words, optionally excluding the target.
-        boolean includeTarget = testNumber % 4 != 0;
+        int extraCount = 5 + index % 20;
+        List<String> words =
+                buildWords(start, target, extraCount, random);
 
-        for (int i = 1; i < chain.size(); i++) {
-            if (i == chain.size() - 1 && !includeTarget) {
-                continue;
-            }
-
-            wordList.add(chain.get(i));
+        // Include unreachable cases as well.
+        if (index % 5 == 0) {
+            words.remove(target);
         }
 
-        // Occasionally include the start word in the dictionary.
-        if (testNumber % 3 == 0) {
-            wordList.add(startWord);
-        }
-
-        // Add valid-length decoy words without duplicates.
-        int extraWords = random.nextInt(8);
-
-        while (extraWords > 0) {
-            StringBuilder decoy = new StringBuilder();
-
-            for (int i = 0; i < length; i++) {
-                decoy.append(
-                    (char) ('a' + random.nextInt(6))
-                );
-            }
-
-            String word = decoy.toString();
-
-            if (used.add(word)) {
-                wordList.add(word);
-                extraWords--;
-            }
-        }
-
-        // Ensure at least one dictionary word exists.
-        if (wordList.isEmpty()) {
-            wordList.add(targetWord);
-        }
-
-        Collections.shuffle(wordList, random);
-
-        return new TestCase(startWord, targetWord, wordList);
+        return new TestCase(start, target, words);
     }
 
-    static void writeTestCase(TestCase testCase,
-                              int testNumber,
-                              Path inputDir,
-                              Path outputDir) throws IOException {
+    static void writeCase(PrintWriter writer, TestCase tc) {
+        writer.println(tc.wordList.size());
 
-        StringBuilder input = new StringBuilder();
-
-        input.append(testCase.startWord)
-             .append(" ")
-             .append(testCase.targetWord)
-             .append("\n");
-
-        input.append(testCase.wordList.size()).append("\n");
-
-        for (int i = 0; i < testCase.wordList.size(); i++) {
-            if (i > 0) {
-                input.append(" ");
-            }
-
-            input.append(testCase.wordList.get(i));
+        for (String word : tc.wordList) {
+            writer.println(word);
         }
 
-        input.append("\n");
-
-        int answer = wordLadderLength(
-            testCase.startWord,
-            testCase.targetWord,
-            testCase.wordList
-        );
-
-        Files.writeString(
-            inputDir.resolve(testNumber + ".txt"),
-            input.toString()
-        );
-
-        Files.writeString(
-            outputDir.resolve(testNumber + ".txt"),
-            answer + "\n"
-        );
+        writer.println(tc.startWord);
+        writer.println(tc.targetWord);
     }
 
     public static void main(String[] args) throws IOException {
-
         String baseDir = "Testcases";
 
-        if (!Files.exists(Paths.get(baseDir))
-                && Files.exists(Paths.get("../Testcases"))) {
+        if (!new File(baseDir).exists()
+                && new File("../Testcases").exists()) {
             baseDir = "../Testcases";
         }
 
-        Path inputDir = Paths.get(baseDir, "input");
-        Path outputDir = Paths.get(baseDir, "output");
+        File inputDir = new File(baseDir, "input");
+        File outputDir = new File(baseDir, "output");
 
-        Files.createDirectories(inputDir);
-        Files.createDirectories(outputDir);
+        inputDir.mkdirs();
+        outputDir.mkdirs();
 
-        Random random = new Random(20261025);
+        Random random = new Random(101);
 
         for (int i = 1; i <= 101; i++) {
-            TestCase testCase = generateTestCase(i, random);
+            TestCase tc = createCase(i, random);
 
-            writeTestCase(
-                testCase,
-                i,
-                inputDir,
-                outputDir
-            );
+            try (PrintWriter in = new PrintWriter(
+                        new File(inputDir, i + ".txt"));
+                 PrintWriter out = new PrintWriter(
+                        new File(outputDir, i + ".txt"))) {
+
+                writeCase(in, tc);
+                out.println(solve(tc));
+            }
         }
 
-        System.out.println(
-            "Successfully generated 101 test cases."
-        );
-        System.out.println(
-            "Input directory: " + inputDir.toAbsolutePath()
-        );
-        System.out.println(
-            "Output directory: " + outputDir.toAbsolutePath()
-        );
+        System.out.println("Generated 101 test cases successfully.");
+        System.out.println("Input directory: " + inputDir.getPath());
+        System.out.println("Output directory: " + outputDir.getPath());
     }
 }

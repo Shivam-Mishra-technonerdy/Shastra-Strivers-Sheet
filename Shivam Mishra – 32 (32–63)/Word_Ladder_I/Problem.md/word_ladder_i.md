@@ -1,27 +1,26 @@
+
 # Word Ladder I
 
 ## Problem Statement
 
-Given two distinct words, `startWord` and `targetWord`, and a list of `N` unique words called `wordList`, where each word has the same length `M`, find the length of the shortest transformation sequence from `startWord` to `targetWord`.
+Given are two distinct words `startWord` and `targetWord`, and a list of size `N`, denoting `wordList` of **unique words** of equal size `M`. Find the length of the shortest transformation sequence from `startWord` to `targetWord`.
 
 Keep the following conditions in mind:
 
-- A word can only consist of lowercase English letters.
+- A word can only consist of lowercase characters.
 - Only one letter can be changed in each transformation.
-- Each transformed word must exist in `wordList`, including `targetWord`.
-- `startWord` may or may not be present in `wordList`.
+- Each transformed word must exist in the `wordList`, including the `targetWord`.
+- `startWord` may or may not be part of the `wordList`.
 
-**Note:** If there is no possible way to transform `startWord` into `targetWord`, return `0`.
+**Note:** If there is no possible way to transform the sequence from `startWord` to `targetWord`, return `0`.
 
-## Examples
-
-### Example 1
+## Example 1
 
 **Input:**
 ```text
-wordList = ["des", "der", "dfr", "dgt", "dfs"]
-startWord = "der"
-targetWord = "dfs"
+5
+des der dfr dgt dfs
+der dfs
 ```
 
 **Output:**
@@ -31,22 +30,21 @@ targetWord = "dfs"
 
 **Explanation:**
 
-The shortest transformation sequence from `der` to `dfs` is:
+The length of the shortest transformation sequence from `der` to `dfs` is `3`.
 
-`der` → `dfr` → `dfs`
+The sequence is:
 
-- Change `e` to `f` to transform `der` into `dfr`.
-- Change `r` to `s` to transform `dfr` into `dfs`.
+`der` -> `dfr` -> `dfs`
 
-All words in the sequence are present in `wordList`. The sequence contains three words, so the answer is `3`.
+Each word in the sequence, except the starting word, belongs to `wordList`.
 
-### Example 2
+## Example 2
 
 **Input:**
 ```text
-wordList = ["geek", "gefk"]
-startWord = "gedk"
-targetWord = "geek"
+2
+geek gefk
+gedk geek
 ```
 
 **Output:**
@@ -56,29 +54,23 @@ targetWord = "geek"
 
 **Explanation:**
 
-The shortest transformation sequence is:
+The length of the shortest transformation sequence from `gedk` to `geek` is `2`.
 
-`gedk` → `geek`
+The sequence is:
 
-Only one character changes: `d` is replaced by `e`. Since `geek` is present in `wordList`, the transformation is valid. The sequence contains two words, so the answer is `2`.
+`gedk` -> `geek`
+
+Only one letter changes, and the target word exists in `wordList`.
 
 ## Constraints
 
-- `1 <= N <= 5000`
+- `1 <= N <= 10^4`
 - `1 <= M <= 10`
+- `startWord.length() == targetWord.length() == M`
 - All words consist of lowercase English letters.
-- All words in `wordList` are unique and have the same length.
-- `startWord` and `targetWord` are distinct.
+- All words in `wordList` are unique.
 
-## Expected Approach
+## Expected Complexity
 
-Use **Breadth-First Search (BFS)** to explore all valid transformations level by level. Since each transformation changes exactly one character, BFS finds the shortest sequence.
-
-Return the number of words in the first sequence that reaches `targetWord`. If the target cannot be reached, return `0`.
-
-## Complexity Analysis
-
-Let `N` be the number of words in `wordList` and `M` be the length of each word.
-
-- **Expected time complexity:** `O(N × M × 26)` using a hash set for dictionary lookups.
-- **Auxiliary space complexity:** `O(N × M)` for the hash set and BFS queue.
+- **Time Complexity:** `O(N * M * 26)` using BFS with character substitutions.
+- **Auxiliary Space:** `O(N * M)` for the word set, visited information, and BFS queue.
